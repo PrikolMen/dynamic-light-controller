@@ -1,0 +1,180 @@
+addonName = "Dynamic Light Controller"
+include( "shared.lua" )
+
+ENT.SetEnabled = ( enabled ) =>
+    @__enabled = enabled == true
+
+ENT.SetSprite = ( sprite ) =>
+    @__sprite = sprite
+
+ENT.SetRed = ( red ) =>
+    @__red = red or 0
+
+ENT.SetGreen = ( green ) =>
+    @__green = green or 0
+
+ENT.SetBlue = ( blue ) =>
+    @__blue = blue or 0
+
+ENT.SetBrightness = ( brightness ) =>
+    @__brightness = brightness or 1
+
+ENT.SetRadius = ( radius ) =>
+    @__radius = radius or 256
+
+-- https://developer.valvesoftware.com/wiki/Light_dynamic#Appearances
+ENT.SetStyle = ( style ) =>
+    @__style = style or 0
+
+ENT.SetNoModel = ( nomodel ) =>
+    @__nomodel = nomodel == true
+
+ENT.SetNoWorld = ( noworld ) =>
+    @__noworld = noworld == true
+
+ENT.SetSpriteAlpha = ( alpha ) =>
+    @__sprite_alpha = alpha or 255
+
+:GetEnabled, :GetRed, :GetGreen, :GetBlue, :GetRadius, :GetSprite = ENT
+:EntIndex, :GetPos, :SetRenderBounds, :IsDormant = FindMetaTable( "Entity" )
+
+do
+
+    :DistToSqr = FindMetaTable( "Vector" )
+    :FindByClass = ents
+    EyePos = EyePos
+    :sort = table
+
+    cl_dlc_distance = CreateClientConVar( "cl_dlc_distance", "2048", true, false, "", 0, 4096 )\GetInt! ^ 2
+    cvars.AddChangeCallback( "cl_dlc_distance", ( _, __, value ) ->
+        cl_dlc_distance = tonumber( value ) ^ 2
+    addonName )
+
+    sortFunc = ( a, b ) ->
+        return a[ 2 ] < b[ 2 ]
+
+    dlights, length = {}, 0
+
+    timer.Create addonName, 0.25, 0, ->
+        for index = 1, length
+            dlights[ index ] = nil
+
+        length = 0
+
+        for entity in *FindByClass( "dlight_controller" )
+            entity.__visible = false
+
+            if not GetEnabled( entity ) or IsDormant( entity )
+                continue
+
+            length += 1
+            origin = GetPos( entity )
+            dlights[ length ] = { entity, DistToSqr( origin, EyePos! ) }
+
+        sort( dlights, sortFunc )
+
+        for index = 1, length
+            data = dlights[ index ]
+            if data[ 2 ] > cl_dlc_distance or index > 32
+                break
+
+            data[ 1 ].__visible = true
+
+ENT.LightThink = ->
+
+do
+
+    :GetBrightness, :GetStyle, :GetNoModel, :GetNoWorld = ENT
+    DynamicLight = DynamicLight
+    :GetLightColor = render
+    CurTime = CurTime
+    Vector = Vector
+
+    index, radius = 0, 0
+    clientIndexes = {}
+    r, g, b = 0, 0, 0
+
+    hook.Add "EntityRemoved", addonName, =>
+        index = @__clientIndex
+        if index ~= nil and clientIndexes[ index ] == @
+            clientIndexes[ index ] = nil
+
+    ENT.Think = =>
+        if @DeathTime and @DeathTime < CurTime!
+            @Remove!
+            return
+
+        @LightThink!
+
+        unless @__visible
+            return
+
+        origin = GetPos( @ )
+        color = GetLightColor( origin ) * 255
+        r, g, b = GetRed( @ ), GetGreen( @ ), GetBlue( @ )
+
+        if color[ 1 ] > ( r + 16 ) or color[ 2 ] > ( g + 16 ) or color[ 3 ] > ( b + 16 )
+            return
+
+        index = @__clientIndex or EntIndex( @ )
+        if index == -1
+            parent = @GetParent!
+            if parent and parent\IsValid!
+                index = EntIndex( parent )
+
+            if index == -1
+                index = 8192
+
+                while clientIndexes[ index ] ~= @
+                    index += 1
+                    unless clientIndexes[ index ] and clientIndexes[ index ]\IsValid!
+                        clientIndexes[ index ] = @
+
+                @__clientIndex = index
+
+        dlight = DynamicLight( index )
+        unless dlight
+            return
+
+        -- Static stuff
+        dlight.dietime = CurTime! + 1
+        dlight.decay = 1000
+
+        -- Dynamic stuff
+        dlight.nomodel, dlight.noworld = GetNoModel( @ ), GetNoWorld( @ )
+        dlight.r, dlight.g, dlight.b = r, g, b
+        dlight.brightness = GetBrightness( @ )
+        dlight.style = GetStyle( @ )
+        dlight.pos = origin
+
+        radius = GetRadius( @ )
+        dlight.size = radius
+
+        if GetSprite( @ ) ~= ""
+            SetRenderBounds( @, Vector( -radius, -radius, -radius ), Vector( radius, radius, radius ) )
+
+do
+
+    :DrawSprite, :SetMaterial = render
+    :GetSpriteAlpha = ENT
+
+    materialCache, materialPath = {}, ""
+    color, radius = Color!, 0
+
+    ENT.Draw = ( flags ) =>
+        unless @__visible
+            return
+
+        materialPath = GetSprite( @ )
+        if materialPath == ""
+            return
+
+        unless materialCache[ materialPath ]
+            materialCache[ materialPath ] = Material( materialPath )
+
+        SetMaterial( materialCache[ materialPath ] )
+
+        color.r, color.g, color.b, color.a = GetRed( @ ), GetGreen( @ ), GetBlue( @ ), GetSpriteAlpha( @ )
+        radius = GetRadius( @ )
+
+        DrawSprite( GetPos( @ ), radius, radius, color )
