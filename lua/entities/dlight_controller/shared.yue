@@ -2,6 +2,9 @@ ENT.Type = "anim"
 ENT.DLightController = true
 ENT.RenderGroup = RENDERGROUP_TRANSLUCENT
 
+ENT.Initialize = =>
+    @DrawShadow( false )
+
 do
 
     Color = Color
