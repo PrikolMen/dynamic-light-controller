@@ -159,7 +159,7 @@ do
     :GetSpriteAlpha = ENT
 
     materialCache, materialPath = {}, ""
-    color, radius = Color!, 0
+    color, radius = Color( 0, 0, 0 ), 0
 
     ENT.Draw = ( flags ) =>
         unless @__visible
