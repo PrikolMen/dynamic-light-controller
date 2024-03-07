@@ -44,3 +44,6 @@ do
 
     ENT.SetSpriteAlpha = ( alpha ) =>
         SetNW2Var( @, "sprite-alpha", alpha or 255 )
+
+    ENT.SetSpriteScale = ( scale ) =>
+        SetNW2Var( @, "sprite-scale", scale or 1 )

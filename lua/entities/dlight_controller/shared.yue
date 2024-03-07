@@ -43,6 +43,9 @@ do
     ENT.GetSpriteAlpha = =>
         return GetNW2Var( @, "sprite-alpha", @__sprite_alpha or 255 )
 
+    ENT.GetSpriteScale = =>
+        return GetNW2Var( @, "sprite-scale", @__sprite_scale or 1 )
+
 do
 
     isvector = isvector

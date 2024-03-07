@@ -35,6 +35,9 @@ ENT.SetNoWorld = ( noworld ) =>
 ENT.SetSpriteAlpha = ( alpha ) =>
     @__sprite_alpha = alpha or 255
 
+ENT.SetSpriteScale = ( scale ) =>
+    @__sprite_scale = scale or 1
+
 :GetRed, :GetGreen, :GetBlue = ENT
 ENTITY = FindMetaTable( "Entity" )
 :GetPos = ENTITY
@@ -284,8 +287,8 @@ do
 do
 
     materialCache, color = {}, Color( 0, 0, 0 )
+    :GetSpriteAlpha, :GetSpriteScale = ENT
     :DrawSprite, :SetMaterial = render
-    :GetSpriteAlpha = ENT
 
     ENT.Draw = =>
         if @__visible
@@ -299,7 +302,7 @@ do
             SetMaterial( materialCache[ materialPath ] )
 
             color.r, color.g, color.b, color.a = GetRed( @ ), GetGreen( @ ), GetBlue( @ ), GetSpriteAlpha( @ )
-            radius = getCalculatedRadius( @ )
+            radius = getCalculatedRadius( @ ) * GetSpriteScale( @ )
 
             DrawSprite( GetPos( @ ), radius, radius, color )
 
