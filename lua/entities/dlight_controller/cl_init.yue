@@ -35,104 +35,231 @@ ENT.SetNoWorld = ( noworld ) =>
 ENT.SetSpriteAlpha = ( alpha ) =>
     @__sprite_alpha = alpha or 255
 
-:GetEnabled, :GetRed, :GetGreen, :GetBlue, :GetRadius, :GetSprite = ENT
-:EntIndex, :GetPos, :SetRenderBounds, :IsDormant = FindMetaTable( "Entity" )
+:GetRed, :GetGreen, :GetBlue = ENT
+ENTITY = FindMetaTable( "Entity" )
+:GetPos = ENTITY
 
+radius = 0
+
+getCalculatedRadius, getCalculatedBrightness = nil, nil
 do
 
+    :GetEnabled, :GetRadius, :GetBrightness = ENT
     :DistToSqr = FindMetaTable( "Vector" )
+    :GetLightColor = render
     :FindByClass = ents
+    :IsDormant = ENTITY
     EyePos = EyePos
     :sort = table
+    :abs = math
 
-    cl_dlc_distance = CreateClientConVar( "cl_dlc_distance", "2048", true, false, "", 0, 4096 )\GetInt! ^ 2
-    cvars.AddChangeCallback( "cl_dlc_distance", ( _, __, value ) ->
-        cl_dlc_distance = tonumber( value ) ^ 2
+    getCalculatedRadius = =>
+        return @__calculatedRadius or GetRadius( @ )
+
+    getCalculatedBrightness = =>
+        return @__calculatedBrightness or GetBrightness( @ )
+
+    ENT.GetCalculatedRadius = getCalculatedRadius
+
+    sqrCache = setmetatable( {}, { __index: ( tbl, key ) ->
+        rawset( tbl, key, key * key )
+        return tbl[ key ]
+    } )
+
+    cl_dlc_distance = CreateClientConVar( "cl_dlc_distance", "2048", true, false, "Maximum distance to calculate dynamic lights.", 16, 4096 )
+
+    maxDistance = cl_dlc_distance\GetInt!
+    maxDistanceSqr = sqrCache[ maxDistance ]
+
+    cvars.AddChangeCallback( cl_dlc_distance\GetName!, ( _, __, value ) ->
+        maxDistance = math.floor( tonumber( value ) or cl_dlc_distance\GetDefault! )
+        maxDistanceSqr = sqrCache[ maxDistance ]
     addonName )
 
-    sortFunc = ( a, b ) ->
-        return a[ 2 ] < b[ 2 ]
+    cl_dlc_speed = CreateClientConVar( "cl_dlc_speed", "5", true, false, "Dynamic light update speed.", 0, 100 )
 
+    cvars.AddChangeCallback( cl_dlc_speed\GetName!, ( _, __, value ) ->
+        timer.Adjust( addonName, 1 / ( tonumber( value ) or cl_dlc_speed\GetDefault! ), 0 )
+    addonName )
+
+    sortByDistance = ( a, b ) ->
+        return a[ 8 ] < b[ 8 ]
+
+    temp, tempLength = setmetatable( {}, { __mode: "k" } ), 0
+    brightness, distance = 0, 0
     dlights, length = {}, 0
+    controllerCount = 0
+    r, g, b = 0, 0, 0
 
-    timer.Create addonName, 0.25, 0, ->
-        for index = 1, length
-            dlights[ index ] = nil
+    timer.Create addonName, 1 / cl_dlc_speed\GetFloat!, 0, ->
+        if tempLength ~= 0
+            for index = 1, tempLength
+                temp[ index ] = nil
 
-        length = 0
+            tempLength = 0
 
-        for entity in *FindByClass( "dlight_controller" )
+        controllers = FindByClass( "dlight_controller" )
+        controllerCount = #controllers
+        if controllerCount == 0
+            return
+
+        eyePos = EyePos!
+
+        for index = 1, controllerCount
+            entity = controllers[ index ]
+            entity.__illuminates = false
             entity.__visible = false
 
             if not GetEnabled( entity ) or IsDormant( entity )
                 continue
 
-            length += 1
             origin = GetPos( entity )
-            dlights[ length ] = { entity, DistToSqr( origin, EyePos! ) }
+            distance = DistToSqr( origin, eyePos )
+            if distance > maxDistanceSqr
+                continue
 
-        sort( dlights, sortFunc )
+            color, r, g, b = GetLightColor( origin ) * 255, GetRed( entity ), GetGreen( entity ), GetBlue( entity )
+            if color[ 1 ] > ( r + 16 ) or color[ 2 ] > ( g + 16 ) or color[ 3 ] > ( b + 16 )
+                continue
+
+            tempLength += 1
+            temp[ tempLength ] = { entity, origin, GetRadius( entity ), GetBrightness( entity ), r, g, b, distance }
+            entity.__visible = true
+
+        if tempLength == 0
+            return
+
+        if tempLength == 1
+            entity = temp[ 1 ][ 1 ]
+            entity.__illuminates = true
+            entity.__calculatedRadius = temp[ 3 ]
+            entity.__calculatedBrightness = temp[ 4 ]
+            return
+
+        for index = 1, tempLength
+            data = temp[ index ]
+            if data == false
+                continue
+
+            radius = data[ 3 ]
+            brightness = data[ 4 ]
+            radiusSqr = sqrCache[ radius * 0.5 ]
+            r, g, b = data[ 5 ], data[ 6 ], data[ 7 ]
+
+            origin = data[ 2 ]
+            for index2 = 1, tempLength
+                if index == index2
+                    continue
+
+                data2 = temp[ index2 ]
+                if data2 == false or radius < data2[ 3 ]
+                    continue
+
+                distance = DistToSqr( origin, data2[ 2 ] )
+                if distance > radiusSqr
+                    continue
+
+                if abs( r - data2[ 5 ] ) < 8 and abs( g - data2[ 6 ] ) < 8 and abs( b - data2[ 7 ] ) < 8
+                    temp[ index2 ] = false
+                    radius += data2[ 3 ] / 2
+                    brightness += data2[ 4 ] / 10
+
+                    if distance <= ( radiusSqr * 0.25 )
+                        entity = data2[ 1 ]
+                        entity.__visible = false
+                        entity.__calculatedRadius = radius
+
+            if radius > maxDistance
+                radius = maxDistance
+
+            if brightness > 5
+                brightness = 5
+
+            data[ 3 ], data[ 4 ] = radius, brightness
+
+        length = 0
+
+        for index = 1, tempLength
+            if temp[ index ] == false
+                continue
+
+            length += 1
+            dlights[ length ] = temp[ index ]
+
+        if length == 0
+            return
+
+        if length > 32
+            sort( dlights, sortByDistance )
+            length = 32
 
         for index = 1, length
             data = dlights[ index ]
-            if data[ 2 ] > cl_dlc_distance or index > 32
-                break
 
-            data[ 1 ].__visible = true
+            entity = data[ 1 ]
+            entity.__illuminates = true
+            entity.__calculatedRadius = data[ 3 ]
+            entity.__calculatedBrightness = data[ 4 ]
 
-ENT.LightThink = ->
+getIndex = nil
+do
+
+    clientIndexes = {}
+
+    hook.Add "EntityRemoved", addonName, ( entity ) ->
+        index = entity.DLightIndex
+        if not index or clientIndexes[ index ] ~= entity
+            return
+
+        clientIndexes[ index ] = nil
+
+    :EntIndex, :GetParent = ENTITY
+    index = 0
+
+    getIndex = ( entity ) ->
+        index = entity.DLightIndex or EntIndex( entity )
+        if index == -1
+            parent = GetParent( entity )
+            if parent\IsValid!
+                index = EntIndex( parent )
+
+            if index == -1
+                index = 8192
+                ::findIndex::
+
+                otherEntity = clientIndexes[ index ]
+                if otherEntity and otherEntity\IsValid! and otherEntity ~= entity
+                    index += 1
+                    goto findIndex
+
+                clientIndexes[ index ] = entity
+                entity.DLightIndex = index
+
+        return index
+
+    ENT.GetIndex = getIndex
+
+:GetSprite = ENT
 
 do
 
-    :GetBrightness, :GetStyle, :GetNoModel, :GetNoWorld = ENT
+    :GetStyle, :GetNoModel, :GetNoWorld, :IsDeathTime = ENT
     DynamicLight = DynamicLight
-    :GetLightColor = render
+    :SetRenderBounds = ENTITY
     CurTime = CurTime
     Vector = Vector
 
-    index, radius = 0, 0
-    clientIndexes = {}
-    r, g, b = 0, 0, 0
-
-    hook.Add "EntityRemoved", addonName, =>
-        index = @__clientIndex
-        if index ~= nil and clientIndexes[ index ] == @
-            clientIndexes[ index ] = nil
-
     ENT.Think = =>
-        if @DeathTime and @DeathTime < CurTime!
+        if IsDeathTime( @ )
             @Remove!
             return
 
         @LightThink!
 
-        unless @__visible
+        unless @__illuminates
             return
 
-        origin = GetPos( @ )
-        color = GetLightColor( origin ) * 255
-        r, g, b = GetRed( @ ), GetGreen( @ ), GetBlue( @ )
-
-        if color[ 1 ] > ( r + 16 ) or color[ 2 ] > ( g + 16 ) or color[ 3 ] > ( b + 16 )
-            return
-
-        index = @__clientIndex or EntIndex( @ )
-        if index == -1
-            parent = @GetParent!
-            if parent and parent\IsValid!
-                index = EntIndex( parent )
-
-            if index == -1
-                index = 8192
-
-                while clientIndexes[ index ] ~= @
-                    index += 1
-                    unless clientIndexes[ index ] and clientIndexes[ index ]\IsValid!
-                        clientIndexes[ index ] = @
-
-                @__clientIndex = index
-
-        dlight = DynamicLight( index )
+        dlight = DynamicLight( getIndex( @ ) )
         unless dlight
             return
 
@@ -141,40 +268,39 @@ do
         dlight.decay = 1000
 
         -- Dynamic stuff
+        dlight.r, dlight.g, dlight.b = GetRed( @ ), GetGreen( @ ), GetBlue( @ )
         dlight.nomodel, dlight.noworld = GetNoModel( @ ), GetNoWorld( @ )
-        dlight.r, dlight.g, dlight.b = r, g, b
-        dlight.brightness = GetBrightness( @ )
+        dlight.brightness = getCalculatedBrightness( @ )
+        dlight.size = getCalculatedRadius( @ )
         dlight.style = GetStyle( @ )
-        dlight.pos = origin
+        dlight.pos = GetPos( @ )
 
-        radius = GetRadius( @ )
-        dlight.size = radius
+        if GetSprite( @ ) == ""
+            return
 
-        if GetSprite( @ ) ~= ""
-            SetRenderBounds( @, Vector( -radius, -radius, -radius ), Vector( radius, radius, radius ) )
+        radius = getCalculatedRadius( @ )
+        SetRenderBounds( @, Vector( -radius, -radius, -radius ), Vector( radius, radius, radius ) )
 
 do
 
+    materialCache, color = {}, Color( 0, 0, 0 )
     :DrawSprite, :SetMaterial = render
     :GetSpriteAlpha = ENT
 
-    materialCache, materialPath = {}, ""
-    color, radius = Color( 0, 0, 0 ), 0
+    ENT.Draw = =>
+        if @__visible
+            materialPath = GetSprite( @ )
+            if materialPath == ""
+                return
 
-    ENT.Draw = ( flags ) =>
-        unless @__visible
-            return
+            unless materialCache[ materialPath ]
+                materialCache[ materialPath ] = Material( materialPath )
 
-        materialPath = GetSprite( @ )
-        if materialPath == ""
-            return
+            SetMaterial( materialCache[ materialPath ] )
 
-        unless materialCache[ materialPath ]
-            materialCache[ materialPath ] = Material( materialPath )
+            color.r, color.g, color.b, color.a = GetRed( @ ), GetGreen( @ ), GetBlue( @ ), GetSpriteAlpha( @ )
+            radius = getCalculatedRadius( @ )
 
-        SetMaterial( materialCache[ materialPath ] )
+            DrawSprite( GetPos( @ ), radius, radius, color )
 
-        color.r, color.g, color.b, color.a = GetRed( @ ), GetGreen( @ ), GetBlue( @ ), GetSpriteAlpha( @ )
-        radius = GetRadius( @ )
-
-        DrawSprite( GetPos( @ ), radius, radius, color )
+ENT.LightThink = ->

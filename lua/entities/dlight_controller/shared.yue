@@ -7,16 +7,6 @@ ENT.Initialize = =>
 
 do
 
-    Color = Color
-
-    ENT.GetLightColor = =>
-        return Color( @GetRed!, @GetGreen!, @GetBlue! )
-
-    ENT.GetLightColorUnpacked = =>
-        return @GetRed!, @GetGreen!, @GetBlue!
-
-do
-
     :GetNW2Var = FindMetaTable( "Entity" )
 
     ENT.GetEnabled = =>
@@ -93,3 +83,9 @@ do
             return
 
         @DeathTime = nil
+
+    ENT.IsDeathTime = =>
+        if @DeathTime == nil
+            return false
+
+        return CurTime! > @DeathTime
