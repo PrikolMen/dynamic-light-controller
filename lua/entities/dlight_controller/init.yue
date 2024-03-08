@@ -2,10 +2,14 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
-ENT.Think = =>
-    if @DeathTime ~= nil and @DeathTime < CurTime!
-        @Remove!
-        return
+do
+
+    :IsDeathTime = ENT
+
+    ENT.Think = =>
+        if IsDeathTime( @ )
+            @Remove!
+            return
 
 do
 
