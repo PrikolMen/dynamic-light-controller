@@ -52,6 +52,7 @@ do
     :GetLightColor = render
     :FindByClass = ents
     :IsDormant = ENTITY
+    :TraceLine = util
     EyePos = EyePos
     :sort = table
     :abs = math
@@ -94,6 +95,9 @@ do
     controllerCount = 0
     r, g, b = 0, 0, 0
 
+    traceResult = {}
+    trace = { collisiongroup: COLLISION_GROUP_WORLD, output: traceResult }
+
     timer.Create addonName, 1 / cl_dlc_speed\GetFloat!, 0, ->
         if tempLength ~= 0
             for index = 1, tempLength
@@ -121,12 +125,20 @@ do
             if distance > maxDistanceSqr
                 continue
 
-            color, r, g, b = GetLightColor( origin ) * 255, GetRed( entity ), GetGreen( entity ), GetBlue( entity )
+            trace.start = origin
+            trace.endpos = origin
+            TraceLine( trace )
+
+            if traceResult.HitWorld
+                continue
+
+            brightness = GetBrightness( entity )
+            color, r, g, b = GetLightColor( origin ) * 255, GetRed( entity ) * brightness, GetGreen( entity ) * brightness, GetBlue( entity ) * brightness
             if color[ 1 ] > ( r + 16 ) or color[ 2 ] > ( g + 16 ) or color[ 3 ] > ( b + 16 )
                 continue
 
             tempLength += 1
-            temp[ tempLength ] = { entity, origin, GetRadius( entity ), GetBrightness( entity ), r, g, b, distance }
+            temp[ tempLength ] = { entity, origin, GetRadius( entity ), brightness, r, g, b, distance }
             entity.__visible = true
 
         if tempLength == 0
