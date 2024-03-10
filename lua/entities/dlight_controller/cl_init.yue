@@ -38,6 +38,7 @@ ENT.SetSpriteAlpha = ( alpha ) =>
 ENT.SetSpriteScale = ( scale ) =>
     @__sprite_scale = scale or 1
 
+cl_dlc_light = CreateClientConVar( "cl_dlc_light", "1", true, false, "Enables light emission from dynamic sources.", 0, 1 )
 :GetRed, :GetGreen, :GetBlue = ENT
 ENTITY = FindMetaTable( "Entity" )
 :GetPos = ENTITY
@@ -56,6 +57,13 @@ do
     EyePos = EyePos
     :sort = table
     :abs = math
+
+    hook.Add "PostCleanupMap", addonName, ->
+        if cl_dlc_light\GetBool!
+            return
+
+        for entity in *FindByClass( "dlight_controller" )
+            entity\Remove!
 
     getCalculatedRadius = =>
         return @__calculatedRadius or GetRadius( @ )
@@ -108,6 +116,14 @@ do
         controllers = FindByClass( "dlight_controller" )
         controllerCount = #controllers
         if controllerCount == 0
+            return
+
+        unless cl_dlc_light\GetBool!
+            for index = 1, controllerCount
+                entity = controllers[ index ]
+                entity.__illuminates = false
+                entity.__visible = false
+
             return
 
         eyePos = EyePos!
