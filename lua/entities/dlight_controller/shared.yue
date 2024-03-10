@@ -46,6 +46,9 @@ do
     ENT.GetSpriteScale = =>
         return GetNW2Var( @, "sprite-scale", @__sprite_scale or 1 )
 
+    ENT.GetDecay = =>
+        return GetNW2Var( @, "decay", @__decay or 1 )
+
 do
 
     isvector = isvector

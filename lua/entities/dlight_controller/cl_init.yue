@@ -38,6 +38,9 @@ ENT.SetSpriteAlpha = ( alpha ) =>
 ENT.SetSpriteScale = ( scale ) =>
     @__sprite_scale = scale or 1
 
+ENT.SetDecay = ( decay ) =>
+    @__decay = decay
+
 cl_dlc_light = CreateClientConVar( "cl_dlc_light", "1", true, false, "Enables light emission from dynamic sources.", 0, 1 )
 :GetRed, :GetGreen, :GetBlue = ENT
 ENTITY = FindMetaTable( "Entity" )
@@ -274,11 +277,14 @@ do
 
 do
 
-    :GetStyle, :GetNoModel, :GetNoWorld, :IsDeathTime = ENT
+    :GetStyle, :GetNoModel, :GetNoWorld, :IsDeathTime, :GetLifetime, :GetDecay = ENT
     DynamicLight = DynamicLight
     :SetRenderBounds = ENTITY
     CurTime = CurTime
     Vector = Vector
+
+    lifetime = 0
+    decay = 0
 
     ENT.Think = =>
         if IsDeathTime( @ )
@@ -294,11 +300,13 @@ do
         unless dlight
             return
 
-        -- Static stuff
-        dlight.dietime = CurTime! + 1
-        dlight.decay = 1000
+        lifetime, decay = GetLifetime( @ ), GetDecay( @ )
+        if lifetime < decay
+            decay = lifetime
 
-        -- Dynamic stuff
+        dlight.dietime = CurTime! + decay
+        dlight.decay = decay * 1000
+
         dlight.r, dlight.g, dlight.b = GetRed( @ ), GetGreen( @ ), GetBlue( @ )
         dlight.nomodel, dlight.noworld = GetNoModel( @ ), GetNoWorld( @ )
         dlight.brightness = getCalculatedBrightness( @ )

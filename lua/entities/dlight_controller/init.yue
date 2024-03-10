@@ -51,3 +51,6 @@ do
 
     ENT.SetSpriteScale = ( scale ) =>
         SetNW2Var( @, "sprite-scale", scale or 1 )
+
+    ENT.SetDecay = ( decay ) =>
+        SetNW2Var( @, "decay", decay )
