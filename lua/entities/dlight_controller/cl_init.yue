@@ -277,13 +277,12 @@ do
 
 do
 
-    :GetStyle, :GetNoModel, :GetNoWorld, :IsDeathTime, :GetLifetime, :GetDecay = ENT
+    :GetStyle, :GetNoModel, :GetNoWorld, :IsDeathTime, :GetDecay = ENT
     DynamicLight = DynamicLight
     :SetRenderBounds = ENTITY
     CurTime = CurTime
     Vector = Vector
 
-    lifetime = 0
     decay = 0
 
     ENT.Think = =>
@@ -300,12 +299,9 @@ do
         unless dlight
             return
 
-        lifetime, decay = GetLifetime( @ ), GetDecay( @ )
-        if lifetime < decay
-            decay = lifetime
-
-        dlight.dietime = CurTime! + decay
+        decay = GetDecay( @ )
         dlight.decay = decay * 1000
+        dlight.dietime = CurTime! + decay
 
         dlight.r, dlight.g, dlight.b = GetRed( @ ), GetGreen( @ ), GetBlue( @ )
         dlight.nomodel, dlight.noworld = GetNoModel( @ ), GetNoWorld( @ )
