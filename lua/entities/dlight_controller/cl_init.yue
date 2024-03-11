@@ -100,7 +100,7 @@ do
     sortByDistance = ( a, b ) ->
         return a[ 8 ] < b[ 8 ]
 
-    temp, tempLength = setmetatable( {}, { __mode: "k" } ), 0
+    temp, tempLength = setmetatable( {}, { __mode: "v" } ), 0
     brightness, distance = 0, 0
     dlights, length = {}, 0
     controllerCount = 0
