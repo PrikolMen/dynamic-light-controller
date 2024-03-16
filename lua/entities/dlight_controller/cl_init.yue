@@ -151,9 +151,8 @@ do
             if traceResult.HitWorld
                 continue
 
-            brightness = GetBrightness( entity )
-            color, r, g, b = GetLightColor( origin ) * 255, GetRed( entity ) * brightness, GetGreen( entity ) * brightness, GetBlue( entity ) * brightness
-            if color[ 1 ] > ( r + 16 ) or color[ 2 ] > ( g + 16 ) or color[ 3 ] > ( b + 16 )
+            brightness, color, r, g, b = GetBrightness( entity ), GetLightColor( origin ) * 255, GetRed( entity ), GetGreen( entity ), GetBlue( entity )
+            if ( color[ 1 ] + color[ 2 ] + color[ 3 ] ) > ( r + g + b + 48 ) * brightness
                 continue
 
             tempLength += 1
