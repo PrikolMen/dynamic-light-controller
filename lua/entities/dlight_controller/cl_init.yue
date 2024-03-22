@@ -41,7 +41,7 @@ ENT.SetSpriteScale = ( scale ) =>
 ENT.SetDecay = ( decay ) =>
     @__decay = decay
 
-cl_dlc_light = CreateClientConVar( "cl_dlc_light", "1", true, false, "Enables light emission from dynamic sources.", 0, 1 )
+dlight_controllers = CreateConVar( "dlight_controllers", "1", bit.bor( FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY ), "Enables light emission from dynamic light controllers.", 0, 1 )
 :GetRed, :GetGreen, :GetBlue = ENT
 ENTITY = FindMetaTable( "Entity" )
 :GetPos = ENTITY
@@ -62,7 +62,7 @@ do
     :abs = math
 
     hook.Add "PostCleanupMap", addonName, ->
-        if cl_dlc_light\GetBool!
+        if dlight_controllers\GetBool!
             return
 
         for entity in *FindByClass( "dlight_controller" )
@@ -81,20 +81,20 @@ do
         return tbl[ key ]
     } )
 
-    cl_dlc_distance = CreateClientConVar( "cl_dlc_distance", "2048", true, false, "Maximum distance to calculate dynamic lights.", 16, 4096 )
+    dlight_controllers_distance = CreateClientConVar( "dlight_controllers_distance", "2048", true, false, "Maximum distance to calculate dynamic lights.", 16, 4096 )
 
-    maxDistance = cl_dlc_distance\GetInt!
+    maxDistance = dlight_controllers_distance\GetInt!
     maxDistanceSqr = sqrCache[ maxDistance ]
 
-    cvars.AddChangeCallback( cl_dlc_distance\GetName!, ( _, __, value ) ->
-        maxDistance = math.floor( tonumber( value ) or cl_dlc_distance\GetDefault! )
+    cvars.AddChangeCallback( dlight_controllers_distance\GetName!, ( _, __, value ) ->
+        maxDistance = math.floor( tonumber( value ) or dlight_controllers_distance\GetDefault! )
         maxDistanceSqr = sqrCache[ maxDistance ]
     addonName )
 
-    cl_dlc_speed = CreateClientConVar( "cl_dlc_speed", "5", true, false, "Dynamic light update speed.", 0, 100 )
+    dlight_controllers_update = CreateClientConVar( "dlight_controllers_update", "5", true, false, "Dynamic light update speed.", 0, 100 )
 
-    cvars.AddChangeCallback( cl_dlc_speed\GetName!, ( _, __, value ) ->
-        timer.Adjust( addonName, 1 / ( tonumber( value ) or cl_dlc_speed\GetDefault! ), 0 )
+    cvars.AddChangeCallback( dlight_controllers_update\GetName!, ( _, __, value ) ->
+        timer.Adjust( addonName, 1 / ( tonumber( value ) or dlight_controllers_update\GetDefault! ), 0 )
     addonName )
 
     sortByDistance = ( a, b ) ->
@@ -109,7 +109,7 @@ do
     traceResult = {}
     trace = { collisiongroup: COLLISION_GROUP_WORLD, output: traceResult }
 
-    timer.Create addonName, 1 / cl_dlc_speed\GetFloat!, 0, ->
+    timer.Create addonName, 1 / dlight_controllers_update\GetFloat!, 0, ->
         if tempLength ~= 0
             for index = 1, tempLength
                 temp[ index ] = nil
@@ -121,7 +121,7 @@ do
         if controllerCount == 0
             return
 
-        unless cl_dlc_light\GetBool!
+        unless dlight_controllers\GetBool!
             for index = 1, controllerCount
                 entity = controllers[ index ]
                 entity.__illuminates = false
