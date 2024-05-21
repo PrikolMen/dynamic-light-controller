@@ -1,3 +1,6 @@
+import isnumber, isvector, IsColor, CurTime from _G
+import GetNW2Var from FindMetaTable( "Entity" )
+
 ENT.Type = "anim"
 ENT.DLightController = true
 ENT.RenderGroup = RENDERGROUP_TRANSLUCENT
@@ -5,94 +8,81 @@ ENT.RenderGroup = RENDERGROUP_TRANSLUCENT
 ENT.Initialize = =>
     @DrawShadow( false )
 
-do
+ENT.GetEnabled = =>
+    return GetNW2Var( @, "enabled", @__enabled or false )
 
-    :GetNW2Var = FindMetaTable( "Entity" )
+ENT.GetSprite = =>
+    return GetNW2Var( @, "sprite", @__sprite or "" )
 
-    ENT.GetEnabled = =>
-        return GetNW2Var( @, "enabled", @__enabled or false )
+ENT.GetRed = =>
+    return GetNW2Var( @, "red", @__red or 255 )
 
-    ENT.GetSprite = =>
-        return GetNW2Var( @, "sprite", @__sprite or "" )
+ENT.GetGreen = =>
+    return GetNW2Var( @, "green", @__green or 255 )
 
-    ENT.GetRed = =>
-        return GetNW2Var( @, "red", @__red or 255 )
+ENT.GetBlue = =>
+    return GetNW2Var( @, "blue", @__blue or 255 )
 
-    ENT.GetGreen = =>
-        return GetNW2Var( @, "green", @__green or 255 )
+ENT.GetBrightness = =>
+    return GetNW2Var( @, "brightness", @__brightness or 1 )
 
-    ENT.GetBlue = =>
-        return GetNW2Var( @, "blue", @__blue or 255 )
+ENT.GetRadius = =>
+    return GetNW2Var( @, "radius", @__radius or 256 )
 
-    ENT.GetBrightness = =>
-        return GetNW2Var( @, "brightness", @__brightness or 1 )
+-- https://developer.valvesoftware.com/wiki/Light_dynamic#Appearances
+ENT.GetStyle = =>
+    return GetNW2Var( @, "style", @__style or 0 )
 
-    ENT.GetRadius = =>
-        return GetNW2Var( @, "radius", @__radius or 256 )
+ENT.GetNoModel = =>
+    return GetNW2Var( @, "nomodel", @__nomodel or false )
 
-    -- https://developer.valvesoftware.com/wiki/Light_dynamic#Appearances
-    ENT.GetStyle = =>
-        return GetNW2Var( @, "style", @__style or 0 )
+ENT.GetNoWorld = =>
+    return GetNW2Var( @, "noworld", @__noworld or false )
 
-    ENT.GetNoModel = =>
-        return GetNW2Var( @, "nomodel", @__nomodel or false )
+ENT.GetSpriteAlpha = =>
+    return GetNW2Var( @, "sprite-alpha", @__sprite_alpha or 255 )
 
-    ENT.GetNoWorld = =>
-        return GetNW2Var( @, "noworld", @__noworld or false )
+ENT.GetSpriteScale = =>
+    return GetNW2Var( @, "sprite-scale", @__sprite_scale or 1 )
 
-    ENT.GetSpriteAlpha = =>
-        return GetNW2Var( @, "sprite-alpha", @__sprite_alpha or 255 )
+ENT.GetDecay = =>
+    return GetNW2Var( @, "decay", @__decay or 1 )
 
-    ENT.GetSpriteScale = =>
-        return GetNW2Var( @, "sprite-scale", @__sprite_scale or 1 )
-
-    ENT.GetDecay = =>
-        return GetNW2Var( @, "decay", @__decay or 1 )
-
-do
-
-    isvector = isvector
-    IsColor = IsColor
-
-    ENT.SetLightColor = ( r, g, b ) =>
-        if IsColor( r )
-            @SetRed( r.r )
-            @SetGreen( r.g )
-            @SetBlue( r.b )
-            return
-
-        if isvector( r )
-            @SetRed( r[ 1 ] * 255 )
-            @SetGreen( r[ 2 ] * 255 )
-            @SetBlue( r[ 3 ] * 255 )
-            return
-
-        @SetRed( r )
-        @SetGreen( g )
-        @SetBlue( b )
+ENT.SetLightColor = ( r, g, b ) =>
+    if IsColor( r )
+        @SetRed( r.r )
+        @SetGreen( r.g )
+        @SetBlue( r.b )
         return
 
-do
+    if isvector( r )
+        @SetRed( r[ 1 ] * 255 )
+        @SetGreen( r[ 2 ] * 255 )
+        @SetBlue( r[ 3 ] * 255 )
+        return
 
-    isnumber = isnumber
-    CurTime = CurTime
-    inf = 1 / 0
+    @SetRed( r )
+    @SetGreen( g )
+    @SetBlue( b )
+    return
 
-    ENT.GetLifetime = =>
-        if @DeathTime
-            return @DeathTime - CurTime!
+inf = 1 / 0
 
-        return inf
+ENT.GetLifetime = =>
+    if @DeathTime
+        return @DeathTime - CurTime!
 
-    ENT.SetLifetime = ( time ) =>
-        if isnumber( time )
-            @DeathTime = CurTime! + time
-            return
+    return inf
 
-        @DeathTime = nil
+ENT.SetLifetime = ( time ) =>
+    if isnumber( time )
+        @DeathTime = CurTime! + time
+        return
 
-    ENT.IsDeathTime = =>
-        if @DeathTime == nil
-            return false
+    @DeathTime = nil
 
-        return CurTime! > @DeathTime
+ENT.IsDeathTime = =>
+    if @DeathTime == nil
+        return false
+
+    return CurTime! > @DeathTime

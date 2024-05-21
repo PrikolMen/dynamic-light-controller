@@ -2,57 +2,52 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
+import SetNW2Var from FindMetaTable( "Entity" )
+import IsDeathTime from ENT
+
 CreateConVar( "dlight_controllers", "1", bit.bor( FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY ), "Enables light emission from dynamic light controllers.", 0, 1 )
 
-do
+ENT.Think = =>
+    if IsDeathTime( @ )
+        @Remove!
+        return
 
-    :IsDeathTime = ENT
+ENT.SetEnabled = ( enabled ) =>
+    SetNW2Var( @, "enabled", enabled == true )
 
-    ENT.Think = =>
-        if IsDeathTime( @ )
-            @Remove!
-            return
+ENT.SetSprite = ( sprite ) =>
+    SetNW2Var( @, "sprite", sprite )
 
-do
+ENT.SetRed = ( red ) =>
+    SetNW2Var( @, "red", red )
 
-    :SetNW2Var = FindMetaTable( "Entity" )
+ENT.SetGreen = ( green ) =>
+    SetNW2Var( @, "green", green )
 
-    ENT.SetEnabled = ( enabled ) =>
-        SetNW2Var( @, "enabled", enabled == true )
+ENT.SetBlue = ( blue ) =>
+    SetNW2Var( @, "blue", blue )
 
-    ENT.SetSprite = ( sprite ) =>
-        SetNW2Var( @, "sprite", sprite )
+ENT.SetBrightness = ( brightness ) =>
+    SetNW2Var( @, "brightness", brightness )
 
-    ENT.SetRed = ( red ) =>
-        SetNW2Var( @, "red", red )
+ENT.SetRadius = ( radius ) =>
+    SetNW2Var( @, "radius", radius )
 
-    ENT.SetGreen = ( green ) =>
-        SetNW2Var( @, "green", green )
+-- https://developer.valvesoftware.com/wiki/Light_dynamic#Appearances
+ENT.SetStyle = ( style ) =>
+    SetNW2Var( @, "style", style )
 
-    ENT.SetBlue = ( blue ) =>
-        SetNW2Var( @, "blue", blue )
+ENT.SetNoModel = ( nomodel ) =>
+    SetNW2Var( @, "nomodel", nomodel == true )
 
-    ENT.SetBrightness = ( brightness ) =>
-        SetNW2Var( @, "brightness", brightness )
+ENT.SetNoWorld = ( noworld ) =>
+    SetNW2Var( @, "noworld", noworld == true )
 
-    ENT.SetRadius = ( radius ) =>
-        SetNW2Var( @, "radius", radius )
+ENT.SetSpriteAlpha = ( alpha ) =>
+    SetNW2Var( @, "sprite-alpha", alpha or 255 )
 
-    -- https://developer.valvesoftware.com/wiki/Light_dynamic#Appearances
-    ENT.SetStyle = ( style ) =>
-        SetNW2Var( @, "style", style )
+ENT.SetSpriteScale = ( scale ) =>
+    SetNW2Var( @, "sprite-scale", scale or 1 )
 
-    ENT.SetNoModel = ( nomodel ) =>
-        SetNW2Var( @, "nomodel", nomodel == true )
-
-    ENT.SetNoWorld = ( noworld ) =>
-        SetNW2Var( @, "noworld", noworld == true )
-
-    ENT.SetSpriteAlpha = ( alpha ) =>
-        SetNW2Var( @, "sprite-alpha", alpha or 255 )
-
-    ENT.SetSpriteScale = ( scale ) =>
-        SetNW2Var( @, "sprite-scale", scale or 1 )
-
-    ENT.SetDecay = ( decay ) =>
-        SetNW2Var( @, "decay", decay )
+ENT.SetDecay = ( decay ) =>
+    SetNW2Var( @, "decay", decay )
