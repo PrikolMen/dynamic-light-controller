@@ -42,24 +42,25 @@ ENT.SetDecay = ( decay ) =>
     @__decay = decay
 
 dlight_controllers = CreateConVar( "dlight_controllers", "1", bit.bor( FCVAR_ARCHIVE, FCVAR_REPLICATED, FCVAR_NOTIFY ), "Enables light emission from dynamic light controllers.", 0, 1 )
-:GetRed, :GetGreen, :GetBlue = ENT
+import GetRed, GetGreen, GetBlue from ENT
 ENTITY = FindMetaTable( "Entity" )
-:GetPos = ENTITY
+VECTOR = FindMetaTable( "Vector" )
+import GetPos from ENTITY
 
 radius = 0
 
-getCalculatedRadius, getCalculatedBrightness = nil, nil
+local getCalculatedRadius, getCalculatedBrightness
 do
 
-    :GetEnabled, :GetRadius, :GetBrightness = ENT
-    :DistToSqr = FindMetaTable( "Vector" )
-    :GetLightColor = render
-    :FindByClass = ents
-    :IsDormant = ENTITY
-    :TraceLine = util
-    EyePos = EyePos
-    :sort = table
-    :abs = math
+    import GetEnabled, GetRadius, GetBrightness from ENT
+    import GetLightColor from render
+    import FindByClass from ents
+    import DistToSqr from VECTOR
+    import IsDormant from ENTITY
+    import TraceLine from util
+    import sort from table
+    import EyePos from _G
+    import abs from math
 
     hook.Add "PostCleanupMap", addonName, ->
         if dlight_controllers\GetBool!
@@ -234,7 +235,7 @@ do
             entity.__calculatedRadius = data[ 3 ]
             entity.__calculatedBrightness = data[ 4 ]
 
-getIndex = nil
+local getIndex
 do
 
     clientIndexes = {}
@@ -246,7 +247,7 @@ do
 
         clientIndexes[ index ] = nil
 
-    :EntIndex, :GetParent = ENTITY
+    import EntIndex, GetParent from ENTITY
     index = 0
 
     getIndex = ( entity ) ->
@@ -272,16 +273,16 @@ do
 
     ENT.GetIndex = getIndex
 
-:GetSprite = ENT
+import GetSprite from ENT
 
 do
 
-    :GetStyle, :GetNoModel, :GetNoWorld, :IsDeathTime, :GetDecay = ENT
-    DynamicLight = DynamicLight
-    :SetRenderBounds = ENTITY
-    CurTime = CurTime
-    Vector = Vector
+    import GetStyle, GetNoModel, GetNoWorld, IsDeathTime, GetDecay from ENT
+    import DynamicLight, CurTime, Vector from _G
+    import SetRenderBounds from ENTITY
+    import SetUnpacked from VECTOR
 
+    mins, maxs = Vector( -1, -1, -1 ), Vector( 1, 1, 1 )
     decay = 0
 
     ENT.Think = =>
@@ -313,13 +314,17 @@ do
             return
 
         radius = getCalculatedRadius( @ )
-        SetRenderBounds( @, Vector( -radius, -radius, -radius ), Vector( radius, radius, radius ) )
+        SetUnpacked( mins, -radius, -radius, -radius )
+        SetUnpacked( maxs, radius, radius, radius )
+        SetRenderBounds( @, mins, maxs )
 
 do
 
-    materialCache, color = {}, Color( 0, 0, 0 )
-    :GetSpriteAlpha, :GetSpriteScale = ENT
-    :DrawSprite, :SetMaterial = render
+    import GetSpriteAlpha, GetSpriteScale from ENT
+    import DrawSprite, SetMaterial from render
+
+    color = Color( 0, 0, 0 )
+    materialCache = {}
 
     ENT.Draw = =>
         if @__visible
